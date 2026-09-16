@@ -1,153 +1,89 @@
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RenderWindow.hpp>
+
 #include "math/Vec2.hpp"
-#include "render/DebugDraw.hpp"
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <algorithm>
-#include <cmath>
+
+void drawArrow(sf::RenderWindow& window, Vec2 start, Vec2 end, sf::Color color) {
+    sf::Vertex line[] = {sf::Vertex(sf::Vector2f(start.x, start.y), color),
+                         sf::Vertex(sf::Vector2f(end.x, end.y), color)};
+    window.draw(line, 2, sf::PrimitiveType::Lines);
+
+    sf::CircleShape tip(6.0f);
+    tip.setOrigin({6.0f, 6.0f});
+    tip.setPosition({end.x, end.y});
+    tip.setFillColor(color);
+    window.draw(tip);
+}
+
+void drawLabel(sf::RenderWindow& window, const sf::Font& font, const std::string& textStr, Vec2 pos, sf::Color color) {
+    sf::Text label(font, textStr, 14);
+    label.setFillColor(color);
+    label.setPosition({pos.x + 8.0f, pos.y - 18.0f});
+    window.draw(label);
+}
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode({1280, 720}), "Chapter 1: Vectors & Operations Playground");
+    sf::RenderWindow window(sf::VideoMode({1280, 720}), "Chap1 - Vector");
     window.setFramerateLimit(60);
 
-    const physics::Vec2 origin{640.0f, 380.0f};
-
-    // Vector U (Blue) and Vector V (Amber) stored in local Cartesian coords relative to origin
-    // Note: in math physics, +Y is UP, but on screen +Y is DOWN.
-    // We store screen offsets so dragging is intuitive, and flip Y when displaying math values!
-    physics::Vec2 uOffset{220.0f, -140.0f}; // Points up-right
-    physics::Vec2 vOffset{160.0f, 100.0f};  // Points down-right
-
-    enum class DragTarget { None, U, V };
-    DragTarget dragging = DragTarget::None;
-
-    auto fontOpt = render::DebugDraw::loadDefaultFont();
-    std::optional<sf::Text> hudText;
-    if (fontOpt) {
-        hudText.emplace(*fontOpt, "", 16);
-        hudText->setFillColor(sf::Color(220, 225, 235));
-        hudText->setPosition({25.0f, 25.0f});
+    sf::Font font;
+    // Cross-platform: load font directly from project assets
+    if (!font.openFromFile("assets/fonts/Arial.ttf")) {
+        // Fallback if running directly from inside cmake-build-debug subfolder:
+        font.openFromFile("../../assets/fonts/Arial.ttf");
     }
 
-    std::cout << "====================================================\n";
-    std::cout << " CHAPTER 1: VECTORS & OPERATIONS PLAYGROUND\n";
-    std::cout << " - Left Click & Drag the blue or amber circles to change vectors.\n";
-    std::cout << " - Observe U + V (Green), U - V (Purple), and Dot/Cross products.\n";
-    std::cout << " - Press Escape to exit.\n";
-    std::cout << "====================================================\n";
+    Vec2 origin(500.0f, 400.0f);
+
+    Vec2 baseU(180.0f, -120.0f);
+    Vec2 v(140.0f, 80.0f);
+    float scaleFactor = 1.0f;
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
-            if (event->is<sf::Event::Closed>() ||
-                (event->is<sf::Event::KeyPressed>() &&
-                 event->getIf<sf::Event::KeyPressed>()->code == sf::Keyboard::Key::Escape)) {
+            if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-
-            if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonPressed>()) {
-                if (mouseBtn->button == sf::Mouse::Button::Left) {
-                    physics::Vec2 mousePos{static_cast<float>(mouseBtn->position.x),
-                                           static_cast<float>(mouseBtn->position.y)};
-                    physics::Vec2 tipU = origin + uOffset;
-                    physics::Vec2 tipV = origin + vOffset;
-
-                    if (mousePos.distanceSquared(tipU) <= 20.0f * 20.0f) {
-                        dragging = DragTarget::U;
-                    } else if (mousePos.distanceSquared(tipV) <= 20.0f * 20.0f) {
-                        dragging = DragTarget::V;
-                    }
-                }
-            }
-
-            if (const auto* mouseBtn = event->getIf<sf::Event::MouseButtonReleased>()) {
-                if (mouseBtn->button == sf::Mouse::Button::Left) {
-                    dragging = DragTarget::None;
-                }
-            }
-
-            if (const auto* mouseMove = event->getIf<sf::Event::MouseMoved>()) {
-                physics::Vec2 mousePos{static_cast<float>(mouseMove->position.x),
-                                       static_cast<float>(mouseMove->position.y)};
-                if (dragging == DragTarget::U) {
-                    uOffset = mousePos - origin;
-                } else if (dragging == DragTarget::V) {
-                    vOffset = mousePos - origin;
+            // Keyboard controls to test SCALAR MULTIPLICATION (*)
+            if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
+                if (key->code == sf::Keyboard::Key::Up) {
+                    scaleFactor += 0.1f;  // Stretch
+                } else if (key->code == sf::Keyboard::Key::Down) {
+                    scaleFactor -= 0.1f;  // Shrink
                 }
             }
         }
 
-        // Compute physics math (Math Cartesian: y = -screenY)
-        physics::Vec2 mathU{uOffset.x, -uOffset.y};
-        physics::Vec2 mathV{vOffset.x, -vOffset.y};
+        Vec2 u = baseU * scaleFactor;
 
-        float lenU = mathU.length();
-        float lenV = mathV.length();
-        float dotProduct = mathU.dot(mathV);
-        float crossProduct = mathU.cross(mathV);
+        Vec2 tipU = origin + u;
+        Vec2 tipV = origin + v;
 
-        float angleDeg = 0.0f;
-        if (lenU > 0.001f && lenV > 0.001f) {
-            float cosTheta = std::clamp(dotProduct / (lenU * lenV), -1.0f, 1.0f);
-            angleDeg = std::acos(cosTheta) * (180.0f / 3.1415926535f);
-        }
+        Vec2 tipAdd = origin + (u + v);
 
-        // Render
-        window.clear(sf::Color(20, 22, 28));
+        window.clear(sf::Color(24, 26, 32));
 
-        // 1. Grid with origin
-        render::DebugDraw::drawGrid(window, window.getSize(), 40.0f, origin);
+        drawArrow(window, origin, tipU, sf::Color::Red);
+        drawArrow(window, origin, tipV, sf::Color::Cyan);
+        drawArrow(window, origin, tipAdd, sf::Color::Green);
+        drawArrow(window, tipV, tipU, sf::Color::Yellow);
 
-        // 2. Vector Subtraction (U - V): arrow from tip of V to tip of U
-        physics::Vec2 tipU = origin + uOffset;
-        physics::Vec2 tipV = origin + vOffset;
-        render::DebugDraw::drawArrow(window, tipV, tipU, sf::Color(192, 132, 252), 2.0f, 8.0f);
-
-        // 3. Parallelogram helper lines for Addition
-        render::DebugDraw::drawLine(window, tipU, tipU + vOffset, sf::Color(245, 158, 11, 100), 1.5f);
-        render::DebugDraw::drawLine(window, tipV, tipV + uOffset, sf::Color(59, 130, 246, 100), 1.5f);
-
-        // 4. Vector Addition Resultant (U + V)
-        render::DebugDraw::drawArrow(window, origin, origin + uOffset + vOffset, sf::Color(16, 185, 129), 3.5f, 12.0f);
-
-        // 5. Vectors U and V
-        render::DebugDraw::drawArrow(window, origin, tipU, sf::Color(59, 130, 246), 3.0f, 10.0f);
-        render::DebugDraw::drawArrow(window, origin, tipV, sf::Color(245, 158, 11), 3.0f, 10.0f);
-
-        // Drag handle circles at tips
-        render::DebugDraw::drawCircle(window, tipU, 7.0f, sf::Color(59, 130, 246), sf::Color::White, 2.0f);
-        render::DebugDraw::drawCircle(window, tipV, 7.0f, sf::Color(245, 158, 11), sf::Color::White, 2.0f);
-
-        // Origin center marker
-        render::DebugDraw::drawCircle(window, origin, 4.0f, sf::Color::White);
-
-        // 6. On-screen HUD
-        if (hudText) {
-            std::ostringstream ss;
-            ss << std::fixed << std::setprecision(1);
-            ss << "[ CHAPTER 1: VECTOR MATH LIVE HUD ]\n";
-            ss << "Vector U (Blue)   : (" << mathU.x << ", " << mathU.y << ")  | Length: " << lenU << "\n";
-            ss << "Vector V (Amber)  : (" << mathV.x << ", " << mathV.y << ")  | Length: " << lenV << "\n";
-            ss << "Vector U + V (Green) : (" << (mathU + mathV).x << ", " << (mathU + mathV).y << ")\n";
-            ss << "Vector U - V (Purple): (" << (mathU - mathV).x << ", " << (mathU - mathV).y << ")\n";
-            ss << "----------------------------------------------\n";
-            ss << "Dot Product (U . V) : " << dotProduct << "  -->  ";
-            if (dotProduct > 20.0f) ss << "Facing Same Way (Acute < 90 deg)\n";
-            else if (dotProduct < -20.0f) ss << "Facing Away (Obtuse > 90 deg)\n";
-            else ss << "Orthogonal / Perpendicular (90 deg)\n";
-
-            ss << "2D Cross (U x V)    : " << crossProduct << "  -->  ";
-            if (crossProduct > 20.0f) ss << "V is Counter-Clockwise from U (+)\n";
-            else if (crossProduct < -20.0f) ss << "V is Clockwise from U (-)\n";
-            else ss << "Collinear / Parallel (0)\n";
-
-            ss << "Angle Between       : " << angleDeg << " deg\n";
-            ss << "----------------------------------------------\n";
-            ss << "Tip: Click and drag the Blue or Amber circle handles!";
-
-            hudText->setString(ss.str());
-            window.draw(*hudText);
-        }
+        drawLabel(window, font,
+                  "Start Point\n(" + std::to_string((int)origin.x) + ", " + std::to_string((int)origin.y) + ")", origin,
+                  sf::Color(180, 180, 180));
+        // 2. Vector U moved the point here:
+        std::string labelU = "Vector U: (" + std::to_string((int)u.x) + ", " + std::to_string((int)u.y) + ")\n" +
+                             "-> New Point: (" + std::to_string((int)tipU.x) + ", " + std::to_string((int)tipU.y) + ")";
+        drawLabel(window, font, labelU, tipU, sf::Color::Red);
+        // 3. Vector V moved the point here:
+        std::string labelV = "Vector V: (" + std::to_string((int)v.x) + ", " + std::to_string((int)v.y) + ")\n" +
+                             "-> New Point: (" + std::to_string((int)tipV.x) + ", " + std::to_string((int)tipV.y) + ")";
+        drawLabel(window, font, labelV, tipV, sf::Color::Cyan);
+        // 4. Combined Vector (U + V) moved the point here:
+        std::string labelAdd = "Vector (U + V): (" + std::to_string((int)(u + v).x) + ", " +
+                               std::to_string((int)(u + v).y) + ")\n" + "-> Final Point: (" +
+                               std::to_string((int)tipAdd.x) + ", " + std::to_string((int)tipAdd.y) + ")";
+        drawLabel(window, font, labelAdd, tipAdd, sf::Color::Green);
 
         window.display();
     }

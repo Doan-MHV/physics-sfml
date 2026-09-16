@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Copy assets to build directory so relative paths always resolve
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 find_package(SFML 3 COMPONENTS Graphics Window System CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
 
