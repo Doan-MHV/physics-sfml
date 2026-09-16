@@ -1,0 +1,84 @@
+# ==========================================
+# GamePhysics Project .gitignore
+# C++20 / CMake / CLion / vcpkg / macOS
+# ==========================================
+
+# Prerequisites / Compiled Objects
+*.o
+*.obj
+*.d
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# Debug Symbols
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# CMake Build Directories & Outputs
+cmake-build-*/
+build/
+bin/
+lib/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+build.ninja
+.ninja_*
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# vcpkg
+vcpkg_installed/
+.vcpkg-clion/
+vcpkg/
+
+# JetBrains / CLion
+.idea/
+*.iml
+cmake-build-debug/
+cmake-build-release/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# macOS System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux System Files
+*~
+.directory
+
+# Temporary / Scratch Files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.swo

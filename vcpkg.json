@@ -1,0 +1,9 @@
+{
+  "name" : "gamephysics",
+  "version-string" : "1.0.0",
+  "builtin-baseline" : "6619482a70ba63eb7bbdb2068bdad05f0986145d",
+  "dependencies" : [ {
+    "name" : "sfml",
+    "version>=" : "3.0.2"
+  } ]
+}
