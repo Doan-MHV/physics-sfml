@@ -35,55 +35,53 @@ int main() {
 
     Vec2 origin(500.0f, 400.0f);
 
-    Vec2 baseU(180.0f, -120.0f);
-    Vec2 v(140.0f, 80.0f);
-    float scaleFactor = 1.0f;
+    const float unitCircleRadius = 80.0f;
+    sf::CircleShape unitCircle(unitCircleRadius);
+    unitCircle.setOrigin({unitCircleRadius, unitCircleRadius});
+    unitCircle.setPosition({origin.x, origin.y});
+    unitCircle.setFillColor(sf::Color::Transparent);
+    unitCircle.setOutlineColor(sf::Color(70, 75, 90));
+    unitCircle.setOutlineThickness(1.5f);
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
-            // Keyboard controls to test SCALAR MULTIPLICATION (*)
-            if (const auto* key = event->getIf<sf::Event::KeyPressed>()) {
-                if (key->code == sf::Keyboard::Key::Up) {
-                    scaleFactor += 0.1f;  // Stretch
-                } else if (key->code == sf::Keyboard::Key::Down) {
-                    scaleFactor -= 0.1f;  // Shrink
-                }
-            }
         }
 
-        Vec2 u = baseU * scaleFactor;
+        sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
+        Vec2 mousePos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
 
-        Vec2 tipU = origin + u;
-        Vec2 tipV = origin + v;
+        Vec2 toMouse = mousePos - origin;
+        float rawLength = toMouse.length();
 
-        Vec2 tipAdd = origin + (u + v);
+        Vec2 direction = toMouse.normalized();
+        float dirLength = direction.length();
+
+        Vec2 unitArrowTip = origin + (direction * unitCircleRadius);
 
         window.clear(sf::Color(24, 26, 32));
 
-        drawArrow(window, origin, tipU, sf::Color::Red);
-        drawArrow(window, origin, tipV, sf::Color::Cyan);
-        drawArrow(window, origin, tipAdd, sf::Color::Green);
-        drawArrow(window, tipV, tipU, sf::Color::Yellow);
+        window.draw(unitCircle);
 
-        drawLabel(window, font,
-                  "Start Point\n(" + std::to_string((int)origin.x) + ", " + std::to_string((int)origin.y) + ")", origin,
-                  sf::Color(180, 180, 180));
-        // 2. Vector U moved the point here:
-        std::string labelU = "Vector U: (" + std::to_string((int)u.x) + ", " + std::to_string((int)u.y) + ")\n" +
-                             "-> New Point: (" + std::to_string((int)tipU.x) + ", " + std::to_string((int)tipU.y) + ")";
-        drawLabel(window, font, labelU, tipU, sf::Color::Red);
-        // 3. Vector V moved the point here:
-        std::string labelV = "Vector V: (" + std::to_string((int)v.x) + ", " + std::to_string((int)v.y) + ")\n" +
-                             "-> New Point: (" + std::to_string((int)tipV.x) + ", " + std::to_string((int)tipV.y) + ")";
-        drawLabel(window, font, labelV, tipV, sf::Color::Cyan);
-        // 4. Combined Vector (U + V) moved the point here:
-        std::string labelAdd = "Vector (U + V): (" + std::to_string((int)(u + v).x) + ", " +
-                               std::to_string((int)(u + v).y) + ")\n" + "-> Final Point: (" +
-                               std::to_string((int)tipAdd.x) + ", " + std::to_string((int)tipAdd.y) + ")";
-        drawLabel(window, font, labelAdd, tipAdd, sf::Color::Green);
+        drawArrow(window, origin, mousePos, sf::Color(140, 150, 170));
+        drawArrow(window, origin, unitArrowTip, sf::Color(60, 220, 130));
+
+        drawLabel(window, font, "Origin (Player)", origin, sf::Color(180, 180, 180));
+
+        std::ostringstream ssMouse;
+        ssMouse << std::fixed << std::setprecision(1);
+        ssMouse << "Raw Vector (to Mouse)\n"
+                << "Distance: " << rawLength << " px";
+        drawLabel(window, font, ssMouse.str(), mousePos, sf::Color(140, 150, 170));
+        std::ostringstream ssNorm;
+        ssNorm << std::fixed << std::setprecision(2);
+        ssNorm << "Normalized Unit Vector\n"
+               << "Direction: (" << direction.x << ", " << direction.y << ")\n"
+               << "Length: " << dirLength << " (Always 1.0!)";
+        drawLabel(window, font, ssNorm.str(), {unitArrowTip.x + 10.0f, unitArrowTip.y + 10.0f},
+                  sf::Color(60, 220, 130));
 
         window.display();
     }
