@@ -33,15 +33,9 @@ int main() {
         font.openFromFile("../../assets/fonts/Arial.ttf");
     }
 
-    Vec2 origin(500.0f, 400.0f);
+    Vec2 guardPos(640.0f, 360.0f);
 
-    const float unitCircleRadius = 80.0f;
-    sf::CircleShape unitCircle(unitCircleRadius);
-    unitCircle.setOrigin({unitCircleRadius, unitCircleRadius});
-    unitCircle.setPosition({origin.x, origin.y});
-    unitCircle.setFillColor(sf::Color::Transparent);
-    unitCircle.setOutlineColor(sf::Color(70, 75, 90));
-    unitCircle.setOutlineThickness(1.5f);
+    Vec2 guardForward(1.0f, 0.0f);
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -51,37 +45,55 @@ int main() {
         }
 
         sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-        Vec2 mousePos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
+        Vec2 playerPos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
 
-        Vec2 toMouse = mousePos - origin;
-        float rawLength = toMouse.length();
+        Vec2 toPlayer = (playerPos - guardPos).normalized();
 
-        Vec2 direction = toMouse.normalized();
-        float dirLength = direction.length();
+        float dotProduct = guardForward.dot(toPlayer);
 
-        Vec2 unitArrowTip = origin + (direction * unitCircleRadius);
+        float cosTheta = std::clamp(dotProduct, -1.0f, 1.0f);
+        float angleDeg = std::acos(cosTheta) * 180.0f / 3.14159265358979323846f;
+
+        sf::Color arrowColor;
+        std::string statusText;
+
+        if (dotProduct > 0.05f) {
+            arrowColor = sf::Color(50, 220, 120);
+            statusText = "IN SIGHT!";
+        } else if (dotProduct < -0.05f) {
+            arrowColor = sf::Color(240, 70, 70);
+            statusText = "OUT OF SIGHT!";
+        } else {
+            arrowColor = sf::Color(70, 200, 255);
+            statusText = "EXACTLY PERPENDICULAR!";
+        }
 
         window.clear(sf::Color(24, 26, 32));
 
-        window.draw(unitCircle);
+        sf::Vertex boundaryLine[] = {sf::Vertex{sf::Vector2f(guardPos.x, 60.0f), sf::Color(60, 65, 80)},
+                                     sf::Vertex{sf::Vector2f(guardPos.x, 660.0f), sf::Color(60, 65, 80)}};
+        window.draw(boundaryLine, 2, sf::PrimitiveType::Lines);
 
-        drawArrow(window, origin, mousePos, sf::Color(140, 150, 170));
-        drawArrow(window, origin, unitArrowTip, sf::Color(60, 220, 130));
+        drawArrow(window, guardPos, guardPos + (guardForward * 120.0f), sf::Color::White);
+        drawArrow(window, guardPos, playerPos, arrowColor);
 
-        drawLabel(window, font, "Origin (Player)", origin, sf::Color(180, 180, 180));
+        sf::CircleShape guardBody(14.0f);
+        guardBody.setOrigin({14.0f, 14.0f});
+        guardBody.setPosition({guardPos.x, guardPos.y});
+        guardBody.setFillColor(sf::Color(100, 110, 130));
+        guardBody.setOutlineColor(sf::Color::White);
+        guardBody.setOutlineThickness(2.0f);
+        window.draw(guardBody);
 
-        std::ostringstream ssMouse;
-        ssMouse << std::fixed << std::setprecision(1);
-        ssMouse << "Raw Vector (to Mouse)\n"
-                << "Distance: " << rawLength << " px";
-        drawLabel(window, font, ssMouse.str(), mousePos, sf::Color(140, 150, 170));
-        std::ostringstream ssNorm;
-        ssNorm << std::fixed << std::setprecision(2);
-        ssNorm << "Normalized Unit Vector\n"
-               << "Direction: (" << direction.x << ", " << direction.y << ")\n"
-               << "Length: " << dirLength << " (Always 1.0!)";
-        drawLabel(window, font, ssNorm.str(), {unitArrowTip.x + 10.0f, unitArrowTip.y + 10.0f},
-                  sf::Color(60, 220, 130));
+        drawLabel(window, font, "Guard", {guardPos.x - 20.0f, guardPos.y + 20.0f}, sf::Color::White);
+        drawLabel(window, font, "Vision Boundary (90 deg)", {guardPos.x + 10.0f, 70.0f}, sf::Color(100, 110, 130));
+
+        std::ostringstream ss;
+        ss << std::fixed << std::setprecision(2);
+        ss << "Dot Product : " << dotProduct << "\n"
+           << "Angle       : " << angleDeg << " deg\n"
+           << "Status      : " << statusText;
+        drawLabel(window, font, ss.str(), {40.0f, 40.0f}, arrowColor);
 
         window.display();
     }
