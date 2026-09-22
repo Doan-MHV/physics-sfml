@@ -11,29 +11,17 @@ struct Vec2 {
     Vec2() = default;
     Vec2(float x_, float y_) : x(x_), y(y_) {}
 
-    Vec2 operator+(const Vec2& rhs) const {
-        return {x + rhs.x, y + rhs.y};
-    }
+    Vec2 operator+(const Vec2& rhs) const { return {x + rhs.x, y + rhs.y}; }
 
-    Vec2 operator-(const Vec2& rhs) const {
-        return {x - rhs.x, y - rhs.y};
-    }
+    Vec2 operator-(const Vec2& rhs) const { return {x - rhs.x, y - rhs.y}; }
 
-    Vec2 operator*(float scalar) const {
-        return {x * scalar, y * scalar};
-    }
+    Vec2 operator*(float scalar) const { return {x * scalar, y * scalar}; }
 
-    Vec2 operator/(float scalar) const {
-        return {x / scalar, y / scalar};
-    }
+    Vec2 operator/(float scalar) const { return {x / scalar, y / scalar}; }
 
-    [[nodiscard]] float lengthSquared() const {
-        return x * x + y * y;
-    }
+    [[nodiscard]] float lengthSquared() const { return x * x + y * y; }
 
-    [[nodiscard]] float length() const {
-        return std::sqrt(x * x + y * y);
-    }
+    [[nodiscard]] float length() const { return std::sqrt(x * x + y * y); }
 
     Vec2 normalized() {
         float len = length();
@@ -44,9 +32,11 @@ struct Vec2 {
         return Vec2{0.0f, 0.0f};
     }
 
-    [[nodiscard]] float dot(const Vec2& rhs) const {
-        return x * rhs.x + y * rhs.y;
-    }
+    [[nodiscard]] float dot(const Vec2& rhs) const { return x * rhs.x + y * rhs.y; }
+
+    [[nodiscard]] float cross(const Vec2& rhs) const { return x * rhs.y - y * rhs.x; }
+
+    [[nodiscard]] Vec2 perpendicular() const { return {-y, x}; }
 };
 
 #endif  // GAMEPHYSICS_VEC2_HPP

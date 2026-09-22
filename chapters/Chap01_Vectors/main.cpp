@@ -33,9 +33,10 @@ int main() {
         font.openFromFile("../../assets/fonts/Arial.ttf");
     }
 
-    Vec2 guardPos(640.0f, 360.0f);
+    Vec2 turretPos(640.0f, 360.0f);
+    Vec2 turretForward(0.0f, -1.0f);
 
-    Vec2 guardForward(1.0f, 0.0f);
+    Vec2 turretNormal = turretForward.perpendicular();
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -45,55 +46,55 @@ int main() {
         }
 
         sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-        Vec2 playerPos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
+        Vec2 targetPos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
 
-        Vec2 toPlayer = (playerPos - guardPos).normalized();
+        Vec2 toTarget = (targetPos - turretPos).normalized();
 
-        float dotProduct = guardForward.dot(toPlayer);
+        float crossProduct = turretForward.cross(toTarget);
+        float dotProduct = turretForward.dot(toTarget);
 
-        float cosTheta = std::clamp(dotProduct, -1.0f, 1.0f);
-        float angleDeg = std::acos(cosTheta) * 180.0f / 3.14159265358979323846f;
+        sf::Color steeringColor;
+        std::string steeringText;
 
-        sf::Color arrowColor;
-        std::string statusText;
-
-        if (dotProduct > 0.05f) {
-            arrowColor = sf::Color(50, 220, 120);
-            statusText = "IN SIGHT!";
-        } else if (dotProduct < -0.05f) {
-            arrowColor = sf::Color(240, 70, 70);
-            statusText = "OUT OF SIGHT!";
+        if (crossProduct > 0.05f) {
+            steeringColor = sf::Color(70, 220, 120);  // Green
+            steeringText = "STEER RIGHT / CLOCKWISE (+)";
+        } else if (crossProduct < -0.05f) {
+            steeringColor = sf::Color(245, 170, 60);  // Amber
+            steeringText = "STEER LEFT / COUNTER-CLOCKWISE (-)";
         } else {
-            arrowColor = sf::Color(70, 200, 255);
-            statusText = "EXACTLY PERPENDICULAR!";
+            steeringColor = sf::Color(80, 200, 255);  // Cyan
+            steeringText = "LOCKED ON! (CROSS PRODUCT = 0)";
         }
 
         window.clear(sf::Color(24, 26, 32));
 
-        sf::Vertex boundaryLine[] = {sf::Vertex{sf::Vector2f(guardPos.x, 60.0f), sf::Color(60, 65, 80)},
-                                     sf::Vertex{sf::Vector2f(guardPos.x, 660.0f), sf::Color(60, 65, 80)}};
-        window.draw(boundaryLine, 2, sf::PrimitiveType::Lines);
+        // 1. Draw Forward Aim Line (White: Length 140px)
+        drawArrow(window, turretPos, turretPos + (turretForward * 140.0f), sf::Color::White);
+        // 2. Draw Perpendicular Normal Line (Magenta: 90 deg)
+        drawArrow(window, turretPos, turretPos + (turretNormal * 80.0f), sf::Color(230, 80, 230));
+        // 3. Draw Line to Mouse Target (Colored by Steering decision!)
+        drawArrow(window, turretPos, targetPos, steeringColor);
 
-        drawArrow(window, guardPos, guardPos + (guardForward * 120.0f), sf::Color::White);
-        drawArrow(window, guardPos, playerPos, arrowColor);
+        sf::CircleShape turretBase(15.0f);
+        turretBase.setOrigin({15.0f, 15.0f});
+        turretBase.setPosition({turretPos.x, turretPos.y});
+        turretBase.setFillColor(sf::Color(70, 80, 100));
+        turretBase.setOutlineColor(sf::Color::White);
+        turretBase.setOutlineThickness(2.0f);
+        window.draw(turretBase);
 
-        sf::CircleShape guardBody(14.0f);
-        guardBody.setOrigin({14.0f, 14.0f});
-        guardBody.setPosition({guardPos.x, guardPos.y});
-        guardBody.setFillColor(sf::Color(100, 110, 130));
-        guardBody.setOutlineColor(sf::Color::White);
-        guardBody.setOutlineThickness(2.0f);
-        window.draw(guardBody);
-
-        drawLabel(window, font, "Guard", {guardPos.x - 20.0f, guardPos.y + 20.0f}, sf::Color::White);
-        drawLabel(window, font, "Vision Boundary (90 deg)", {guardPos.x + 10.0f, 70.0f}, sf::Color(100, 110, 130));
-
+        drawLabel(window, font, "Forward", {turretPos.x + 10.0f, turretPos.y - 150.0f}, sf::Color::White);
+        drawLabel(window, font, "Normal (-y, x)",
+                  {turretPos.x + (turretNormal.x * 80.0f) + 10.0f, turretPos.y + (turretNormal.y * 80.0f)},
+                  sf::Color(230, 80, 230));
         std::ostringstream ss;
         ss << std::fixed << std::setprecision(2);
-        ss << "Dot Product : " << dotProduct << "\n"
-           << "Angle       : " << angleDeg << " deg\n"
-           << "Status      : " << statusText;
-        drawLabel(window, font, ss.str(), {40.0f, 40.0f}, arrowColor);
+        ss << "=== 2D CROSS PRODUCT (STEERING DECISION) ===\n"
+           << "Cross Product : " << crossProduct << "\n"
+           << "Dot Product   : " << dotProduct << "\n"
+           << "Steering AI   : " << steeringText;
+        drawLabel(window, font, ss.str(), {40.0f, 40.0f}, steeringColor);
 
         window.display();
     }
