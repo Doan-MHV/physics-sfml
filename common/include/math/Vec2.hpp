@@ -23,7 +23,7 @@ struct Vec2 {
 
     [[nodiscard]] float length() const { return std::sqrt(x * x + y * y); }
 
-    Vec2 normalized() {
+    [[nodiscard]] Vec2 normalized() const {
         float len = length();
         if (len > EPSILON) {
             return {x / len, y / len};

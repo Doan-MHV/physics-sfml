@@ -28,15 +28,21 @@ int main() {
 
     sf::Font font;
     // Cross-platform: load font directly from project assets
-    if (!font.openFromFile("assets/fonts/Arial.ttf")) {
+    if (!font.openFromFile("../../assets/fonts/Arial.ttf")) {
         // Fallback if running directly from inside cmake-build-debug subfolder:
-        font.openFromFile("../../assets/fonts/Arial.ttf");
+        font.openFromFile("assets/fonts/Arial.ttf");
     }
 
-    Vec2 turretPos(640.0f, 360.0f);
-    Vec2 turretForward(0.0f, -1.0f);
+    Vec2 playerPos(640.0f, 360.0f);
+    float playerAngleRad = -3.1415926535f * 0.5f;
 
-    Vec2 turretNormal = turretForward.perpendicular();
+    const float radarRadius = 70.0f;
+    sf::CircleShape radarRing(radarRadius);
+    radarRing.setOrigin({radarRadius, radarRadius});
+    radarRing.setPosition({playerPos.x, playerPos.y});
+    radarRing.setFillColor(sf::Color::Transparent);
+    radarRing.setOutlineColor(sf::Color(60, 65, 80));
+    radarRing.setOutlineThickness(2.0f);
 
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
@@ -45,56 +51,79 @@ int main() {
             }
         }
 
-        sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
-        Vec2 targetPos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
-
-        Vec2 toTarget = (targetPos - turretPos).normalized();
-
-        float crossProduct = turretForward.cross(toTarget);
-        float dotProduct = turretForward.dot(toTarget);
-
-        sf::Color steeringColor;
-        std::string steeringText;
-
-        if (crossProduct > 0.05f) {
-            steeringColor = sf::Color(70, 220, 120);  // Green
-            steeringText = "STEER RIGHT / CLOCKWISE (+)";
-        } else if (crossProduct < -0.05f) {
-            steeringColor = sf::Color(245, 170, 60);  // Amber
-            steeringText = "STEER LEFT / COUNTER-CLOCKWISE (-)";
-        } else {
-            steeringColor = sf::Color(80, 200, 255);  // Cyan
-            steeringText = "LOCKED ON! (CROSS PRODUCT = 0)";
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
+            playerAngleRad -= 0.05f;
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
+            playerAngleRad += 0.05f;
         }
 
-        window.clear(sf::Color(24, 26, 32));
+        Vec2 forward(std::cos(playerAngleRad), std::sin(playerAngleRad));
 
-        // 1. Draw Forward Aim Line (White: Length 140px)
-        drawArrow(window, turretPos, turretPos + (turretForward * 140.0f), sf::Color::White);
-        // 2. Draw Perpendicular Normal Line (Magenta: 90 deg)
-        drawArrow(window, turretPos, turretPos + (turretNormal * 80.0f), sf::Color(230, 80, 230));
-        // 3. Draw Line to Mouse Target (Colored by Steering decision!)
-        drawArrow(window, turretPos, targetPos, steeringColor);
+        sf::Vector2i mousePixel = sf::Mouse::getPosition(window);
+        Vec2 enemyPos(static_cast<float>(mousePixel.x), static_cast<float>(mousePixel.y));
 
-        sf::CircleShape turretBase(15.0f);
-        turretBase.setOrigin({15.0f, 15.0f});
-        turretBase.setPosition({turretPos.x, turretPos.y});
-        turretBase.setFillColor(sf::Color(70, 80, 100));
-        turretBase.setOutlineColor(sf::Color::White);
-        turretBase.setOutlineThickness(2.0f);
-        window.draw(turretBase);
+        Vec2 toEnemy = enemyPos - playerPos;
 
-        drawLabel(window, font, "Forward", {turretPos.x + 10.0f, turretPos.y - 150.0f}, sf::Color::White);
-        drawLabel(window, font, "Normal (-y, x)",
-                  {turretPos.x + (turretNormal.x * 80.0f) + 10.0f, turretPos.y + (turretNormal.y * 80.0f)},
-                  sf::Color(230, 80, 230));
+        float distance = toEnemy.length();
+
+        Vec2 enemyDir = toEnemy.normalized();
+
+        float dot = forward.dot(enemyDir);
+
+        float cross = forward.cross(enemyDir);
+
+        Vec2 radarPipPos = playerPos + (enemyDir * radarRadius);
+
+        sf::Color threatColor;
+        std::string sightStatus;
+        if (dot > 0.0f) {
+            threatColor = sf::Color(70, 220, 120);  // Green (In Sight)
+            sightStatus = "IN SIGHT (Front)";
+        } else {
+            threatColor = sf::Color(240, 70, 70);  // Red (Blind Spot)
+            sightStatus = "BEHIND (Blind Spot!)";
+        }
+        std::string steerStatus;
+        if (cross > 0.05f) {
+            steerStatus = "TURN RIGHT ->";
+        } else if (cross < -0.05f) {
+            steerStatus = "<- TURN LEFT";
+        } else {
+            steerStatus = "LOCKED DEAD AHEAD!";
+        }
+
+        window.clear(sf::Color(22, 24, 30));
+
+        window.draw(radarRing);
+
+        drawArrow(window, playerPos, enemyPos, sf::Color(80, 90, 110));
+        drawArrow(window, playerPos, playerPos + (forward * 100.0f), sf::Color::White);
+
+        sf::CircleShape threatPip(8.0f);
+        threatPip.setOrigin({8.0f, 8.0f});
+        threatPip.setPosition({radarPipPos.x, radarPipPos.y});
+        threatPip.setFillColor(threatColor);
+        window.draw(threatPip);
+
+        sf::CircleShape enemyDot(6.0f);
+        enemyDot.setOrigin({6.0f, 6.0f});
+        enemyDot.setPosition({enemyPos.x, enemyPos.y});
+        enemyDot.setFillColor(threatColor);
+        window.draw(enemyDot);
+
+        drawLabel(window, font, "Player (Press A / D to Rotate)", {playerPos.x - 90.0f, playerPos.y + 85.0f},
+                  sf::Color(160, 170, 190));
+        drawLabel(window, font, "Threat", {enemyPos.x + 12.0f, enemyPos.y - 10.0f}, threatColor);
         std::ostringstream ss;
         ss << std::fixed << std::setprecision(2);
-        ss << "=== 2D CROSS PRODUCT (STEERING DECISION) ===\n"
-           << "Cross Product : " << crossProduct << "\n"
-           << "Dot Product   : " << dotProduct << "\n"
-           << "Steering AI   : " << steeringText;
-        drawLabel(window, font, ss.str(), {40.0f, 40.0f}, steeringColor);
+        ss << "================ CHAPTER 1 FINALE: COMBAT MATH ================\n"
+           << "Distance (Length)       : " << distance << " px\n"
+           << "Direction (Normalized)  : (" << enemyDir.x << ", " << enemyDir.y << ")\n"
+           << "Dot Product (Front/Back): " << dot << "  --> " << sightStatus << "\n"
+           << "Cross Product (Steer)   : " << cross << "  --> " << steerStatus << "\n"
+           << "===============================================================";
+        drawLabel(window, font, ss.str(), {40.0f, 30.0f}, threatColor);
 
         window.display();
     }
