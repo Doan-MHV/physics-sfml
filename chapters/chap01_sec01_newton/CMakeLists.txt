@@ -1,0 +1,2 @@
+add_executable(chap01_sec01_newton main.cpp)
+target_link_libraries(chap01_sec01_newton PRIVATE common_physics)

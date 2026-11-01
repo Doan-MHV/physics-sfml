@@ -82,3 +82,8 @@ Desktop.ini
 *.bak
 *.swp
 *.swo
+
+# Agent Instructor Notes & Curriculum Docs
+docs/
+.notes/
+

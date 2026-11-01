@@ -1,2 +1,1 @@
-add_subdirectory(Chap01_Vectors)
-add_subdirectory(Chap02_Kinematics)
+add_subdirectory(chap01_sec01_newton)
