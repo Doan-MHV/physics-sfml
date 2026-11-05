@@ -1,0 +1,2 @@
+add_executable(chap01_sec03_challenge main.cpp)
+target_link_libraries(chap01_sec03_challenge PRIVATE common_physics)

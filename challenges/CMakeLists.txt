@@ -1,1 +1,3 @@
 add_subdirectory(chap01_sec01_challenge)
+add_subdirectory(chap01_sec02_challenge)
+add_subdirectory(chap01_sec03_challenge)

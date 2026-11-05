@@ -1,1 +1,3 @@
 add_subdirectory(chap01_sec01_newton)
+add_subdirectory(chap01_sec02_units)
+add_subdirectory(chap01_sec03_coords)

@@ -1,0 +1,2 @@
+add_executable(chap01_sec03_coords main.cpp)
+target_link_libraries(chap01_sec03_coords PRIVATE common_physics)
